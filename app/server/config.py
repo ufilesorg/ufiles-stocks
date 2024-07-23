@@ -18,6 +18,12 @@ class Settings(metaclass=Singleton):
     """Server config settings."""
 
     root_url: str = os.getenv("DOMAIN", default="http://localhost:8000")
+    project_name: str = os.getenv("PROJECT_NAME", default="Pixiee")
+
+    FREEPIK_API_KEY: str = os.getenv("FREEPIK_API_KEY")
+    SHUTTERSTOCK_API_KEY: str = os.getenv("SHUTTERSTOCK_API_KEY")
+    DECODL_APP_KEY: str = os.getenv("DECODL_APP_KEY")
+    DECODL_APP_SECRET: str = os.getenv("DECODL_APP_SECRET")
 
     testing: bool = os.getenv("TESTING", default=False)
 
