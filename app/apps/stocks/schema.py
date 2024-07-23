@@ -11,3 +11,7 @@ class StockImage(BaseModel):
     id: int
     original: StockBaseImage
     preview: StockBaseImage
+
+
+class StockImageRequest(BaseModel):
+    id: int

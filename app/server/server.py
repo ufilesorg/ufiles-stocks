@@ -113,4 +113,9 @@ async def health():
 
 @app.get("/openapi.json", include_in_schema=False)
 async def openapi():
-    return app.openapi()
+    openapi = app.openapi()
+    paths = {}
+    for path in openapi["paths"]:
+        paths[f"/v1/apps/stocks{path}"] = openapi["paths"][path]
+    openapi["paths"] = paths
+    return openapi

@@ -9,6 +9,7 @@ from usso.fastapi.integration import jwt_access_security
 
 from .freepik import FreePikManager
 from .shutterstock import ShutterStockManager
+from .schema import StockImageRequest
 
 router = fastapi.APIRouter(
     tags=["Stock images"],
@@ -22,6 +23,7 @@ router = fastapi.APIRouter(
 async def search(
     request: fastapi.Request,
     origin: Literal["freepik", "shutterstock"],
+    q: str,
     _: UserData = fastapi.Depends(jwt_access_security),
 ):
     params = request.query_params
@@ -53,7 +55,7 @@ async def search(
 async def download_image(
     request: fastapi.Request,
     origin: Literal["freepik", "shutterstock"],
-    code: int = fastapi.Body(),
+    code: StockImageRequest,
     _: UserData = fastapi.Depends(jwt_access_security),
 ):
     try:

@@ -91,6 +91,8 @@ class BaseStockImageManager(metaclass=Singleton):
             }
             url = f"https://decodl.net/api/job/dev/{job_id}"
             res = await aio_request_session(session=session, url=url, headers=headers)
-            res.pop("balance", None)
+            import logging
+            logging.info(f"get_job: {res}")
+            # res.pop("balance", None)
 
             return res
