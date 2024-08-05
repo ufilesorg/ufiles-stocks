@@ -11,9 +11,12 @@ services:
       - ./app:/app
     networks:
       - ufiles-stg-net
+      - ufiles-net
       
 networks:
   traefik-net:
     external: true
   ufiles-stg-net:
+    external: true
+  ufiles-net:
     external: true

@@ -8,8 +8,8 @@ from usso import UserData
 from usso.fastapi.integration import jwt_access_security
 
 from .freepik import FreePikManager
-from .shutterstock import ShutterStockManager
 from .schema import StockImageRequest
+from .shutterstock import ShutterStockManager
 
 router = fastapi.APIRouter(
     tags=["Stock images"],
@@ -19,17 +19,17 @@ router = fastapi.APIRouter(
 )
 
 
-@router.get("/{origin}/search", response_model=list[StockImage])
+@router.get("/{provider}/search", response_model=list[StockImage])
 async def search(
     request: fastapi.Request,
-    origin: Literal["freepik", "shutterstock"],
+    provider: Literal["freepik", "shutterstock"],
     q: str,
     _: UserData = fastapi.Depends(jwt_access_security),
 ):
     params = request.query_params
     logging.info(f"search params: {params}")
     try:
-        match origin:
+        match provider:
             case "freepik":
                 return await FreePikManager().search(**params)
             case "shutterstock":
@@ -38,7 +38,7 @@ async def search(
                 raise exceptions.BaseHTTPException(
                     status_code=400,
                     error="Bad Request",
-                    message=f"Unknown origin {origin}",
+                    message=f"Unknown provider {provider}",
                 )
 
     except Exception as e:
@@ -51,15 +51,15 @@ async def search(
         )
 
 
-@router.post("/{origin}/download")
+@router.post("/{provider}/download")
 async def download_image(
     request: fastapi.Request,
-    origin: Literal["freepik", "shutterstock"],
+    provider: Literal["freepik", "shutterstock"],
     code: StockImageRequest,
     _: UserData = fastapi.Depends(jwt_access_security),
 ):
     try:
-        match origin:
+        match provider:
             case "freepik":
                 return await FreePikManager().download(code)
             case "shutterstock":
@@ -68,7 +68,7 @@ async def download_image(
                 raise exceptions.BaseHTTPException(
                     status_code=400,
                     error="Bad Request",
-                    message=f"Unknown origin {origin}",
+                    message=f"Unknown provider {provider}",
                 )
 
     except Exception as e:
@@ -81,15 +81,15 @@ async def download_image(
         )
 
 
-@router.get("/{origin}/download/{job_id}")
+@router.get("/{provider}/download/{job_id}")
 async def get_job_status(
     request: fastapi.Request,
-    origin: Literal["freepik", "shutterstock"],
+    provider: Literal["freepik", "shutterstock"],
     job_id: str,
     _: UserData = fastapi.Depends(jwt_access_security),
 ):
     try:
-        match origin:
+        match provider:
             case "freepik":
                 return await FreePikManager().get_job(job_id)
             case "shutterstock":
@@ -98,7 +98,7 @@ async def get_job_status(
                 raise exceptions.BaseHTTPException(
                     status_code=400,
                     error="Bad Request",
-                    message=f"Unknown origin {origin}",
+                    message=f"Unknown provider {provider}",
                 )
 
     except Exception as e:
