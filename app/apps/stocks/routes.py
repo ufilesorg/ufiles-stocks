@@ -2,13 +2,12 @@ import logging
 from typing import Literal
 
 import fastapi
-from apps.stocks.schema import StockImage
 from core import exceptions
 from usso import UserData
 from usso.fastapi.integration import jwt_access_security
 
 from .freepik import FreePikManager
-from .schema import StockImageRequest
+from .schemas import StockImage, StockImageRequest
 from .shutterstock import ShutterStockManager
 
 router = fastapi.APIRouter(

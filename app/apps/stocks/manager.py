@@ -1,10 +1,11 @@
 import asyncio
 
 import aiohttp
-from apps.stocks.schema import StockImage
 from server.config import Settings
 from singleton import Singleton
 from utils.aionetwork import aio_request_session
+
+from .schemas import StockImage
 
 
 class BaseStockImageManager(metaclass=Singleton):
@@ -92,6 +93,7 @@ class BaseStockImageManager(metaclass=Singleton):
             url = f"https://decodl.net/api/job/dev/{job_id}"
             res = await aio_request_session(session=session, url=url, headers=headers)
             import logging
+
             logging.info(f"get_job: {res}")
             # res.pop("balance", None)
 

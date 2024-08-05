@@ -1,8 +1,8 @@
 import aiohttp
-from apps.stocks.schema import StockBaseImage, StockImage
 from server.config import Settings
 
 from .manager import BaseStockImageManager
+from .schemas import StockBaseImage, StockImage
 
 
 class ShutterStockManager(BaseStockImageManager):

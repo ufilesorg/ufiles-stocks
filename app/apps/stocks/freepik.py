@@ -2,11 +2,11 @@ import asyncio
 import random
 
 import aiohttp
-from apps.stocks.schema import StockBaseImage, StockImage
 from server.config import Settings
 from utils.aionetwork import aio_request, aio_request_session
 
 from .manager import BaseStockImageManager
+from .schemas import StockBaseImage, StockImage
 
 
 class FreePikManager(BaseStockImageManager):
