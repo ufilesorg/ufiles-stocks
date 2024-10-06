@@ -1,5 +1,5 @@
 services:  
-  stocks:
+  imagination:
     build: app
     restart: unless-stopped
     command: python app.py
