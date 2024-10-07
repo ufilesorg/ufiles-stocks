@@ -23,9 +23,13 @@ async def search(
     request: fastapi.Request,
     provider: Literal["freepik", "shutterstock"],
     q: str,
+    page: int = 1,
+    limit: int = 10,
     _: UserData = fastapi.Depends(jwt_access_security),
 ):
-    params = request.query_params
+    params = dict(request.query_params)
+    params["page"] = page
+    params["limit"] = limit
     logging.info(f"search params: {params}")
     try:
         match provider:
@@ -57,27 +61,17 @@ async def download_image(
     code: StockImageRequest,
     _: UserData = fastapi.Depends(jwt_access_security),
 ):
-    try:
-        match provider:
-            case "freepik":
-                return await FreePikManager().download(code)
-            case "shutterstock":
-                return await ShutterStockManager().download(code)
-            case _:
-                raise exceptions.BaseHTTPException(
-                    status_code=400,
-                    error="Bad Request",
-                    message=f"Unknown provider {provider}",
-                )
-
-    except Exception as e:
-        logging.error(f"image download: {e}")
-
-        raise exceptions.BaseHTTPException(
-            status_code=500,
-            error="Bad Request",
-            message=f"Could not create your request. {e}",
-        )
+    match provider:
+        case "freepik":
+            return await FreePikManager().download(code.id)
+        case "shutterstock":
+            return await ShutterStockManager().download(code.id)
+        case _:
+            raise exceptions.BaseHTTPException(
+                status_code=400,
+                error="Bad Request",
+                message=f"Unknown provider {provider}",
+            )
 
 
 @router.get("/{provider}/download/{job_id}")

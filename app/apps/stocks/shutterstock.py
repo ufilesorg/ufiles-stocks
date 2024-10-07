@@ -7,6 +7,7 @@ from .schemas import StockBaseImage, StockImage
 
 class ShutterStockManager(BaseStockImageManager):
     def __init__(self, api_key: str = Settings.SHUTTERSTOCK_API_KEY):
+        super().__init__(api_key)
         self.api_key = api_key
         self.base_url = "https://api.shutterstock.com/v2/images/search"
         self.headers = {

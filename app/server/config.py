@@ -10,7 +10,6 @@ import dotenv
 from singleton import Singleton
 
 dotenv.load_dotenv()
-base_dir = Path(__file__).resolve().parent.parent
 
 
 @dataclasses.dataclass
@@ -18,12 +17,26 @@ class Settings(metaclass=Singleton):
     """Server config settings."""
 
     root_url: str = os.getenv("DOMAIN", default="http://localhost:8000")
-    project_name: str = os.getenv("PROJECT_NAME", default="Pixiee")
+    mongo_uri: str = os.getenv("MONGO_URI", default="mongodb://mongo:27017/")
+    project_name: str = os.getenv("PROJECT_NAME", default="Stock Images")
+    base_dir: Path = Path(__file__).resolve().parent.parent
+    base_path: str = "/v1/apps/stocks"
+    page_max_limit: int = 100
+
+    app_id: str = os.getenv("APP_ID")
+    app_secret: str = os.getenv("APP_SECRET")
+
+    JWT_CONFIG: str = os.getenv(
+        "USSO_JWT_CONFIG",
+        default='{"jwk_url": "https://usso.io/website/jwks.json","type": "RS256","header": {"type": "Cookie", "name": "usso_access_token"} }',
+    )
 
     FREEPIK_API_KEY: str = os.getenv("FREEPIK_API_KEY")
     SHUTTERSTOCK_API_KEY: str = os.getenv("SHUTTERSTOCK_API_KEY")
     DECODL_APP_KEY: str = os.getenv("DECODL_APP_KEY")
     DECODL_APP_SECRET: str = os.getenv("DECODL_APP_SECRET")
+    DECODL_ACCESS_TOKEN: str = os.getenv("DECODL_ACCESS_TOKEN")
+    DECODL_REFRESH_TOKEN: str = os.getenv("DECODL_REFRESH_TOKEN")
 
     testing: bool = os.getenv("TESTING", default=False)
 
@@ -61,8 +74,9 @@ class Settings(metaclass=Singleton):
         },
     }
 
-    def config_logger(self):
-        if not (base_dir / "logs").exists():
-            (base_dir / "logs").mkdir()
+    @classmethod
+    def config_logger(cls):
+        if not (cls.base_dir / "logs").exists():
+            (cls.base_dir / "logs").mkdir()
 
-        logging.config.dictConfig(self.log_config)
+        logging.config.dictConfig(cls.log_config)

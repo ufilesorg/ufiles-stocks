@@ -11,6 +11,7 @@ from .schemas import StockBaseImage, StockImage
 
 class FreePikManager(BaseStockImageManager):
     def __init__(self, api_key: str = Settings.FREEPIK_API_KEY):
+        super().__init__(api_key)
         self.api_key = api_key
         self.base_url = "https://api.freepik.com/v1/resources"
         self.headers = {
