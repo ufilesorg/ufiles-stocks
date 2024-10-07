@@ -17,10 +17,12 @@ class Settings(metaclass=Singleton):
     """Server config settings."""
 
     root_url: str = os.getenv("DOMAIN", default="http://localhost:8000")
-    project_name: str = os.getenv("PROJECT_NAME", default="Pixiee")
+    mongo_uri: str = os.getenv("MONGO_URI", default="mongodb://mongo:27017/")
+    project_name: str = os.getenv("PROJECT_NAME", default="Imagine")
     base_dir: Path = Path(__file__).resolve().parent.parent
-    base_path: str = "/api/v1/apps/imagination"
+    base_path: str = "/v1/apps/imagine"
     page_max_limit: int = 100
+    update_time: int = 60
 
     app_id: str = os.getenv("APP_ID")
     app_secret: str = os.getenv("APP_SECRET")
@@ -29,7 +31,10 @@ class Settings(metaclass=Singleton):
         "USSO_JWT_CONFIG",
         default='{"jwk_url": "https://usso.io/website/jwks.json","type": "RS256","header": {"type": "Cookie", "name": "usso_access_token"} }',
     )
-    
+
+    METIS_API_KEY: str = os.getenv("METIS_API_KEY")
+    METIS_BOT_ID: str = os.getenv("METIS_BOT_ID")
+
     testing: bool = os.getenv("TESTING", default=False)
 
     log_config = {

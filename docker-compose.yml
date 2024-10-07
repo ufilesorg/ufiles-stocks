@@ -1,5 +1,5 @@
-services:  
-  imagination:
+services:
+  imagine:
     build: app
     restart: unless-stopped
     command: python app.py
@@ -10,11 +10,14 @@ services:
     volumes:
       - ./app:/app
     networks:
+      - mongo-net
       - ufiles-stg-net
       - ufiles-net
-      
+
 networks:
   traefik-net:
+    external: true
+  mongo-net:
     external: true
   ufiles-stg-net:
     external: true
