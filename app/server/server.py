@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from json_advanced import dumps
 from usso.exceptions import USSOException
 
-from . import config, db, middlewares
+from . import config, db
 
 
 @asynccontextmanager
@@ -38,8 +38,8 @@ app = fastapi.FastAPI(
         "url": "https://github.com/mahdikiani/FastAPILaunchpad/blob/main/LICENSE",
     },
     docs_url=f"{config.Settings.base_path}/docs",
-    # openapi_url=f"{config.Settings.base_path}/openapi.json",
-    openapi_url="/v1/apps/imagine/openapi.json",
+    openapi_url=f"{config.Settings.base_path}/openapi.json",
+    # openapi_url="/v1/apps/imagine/openapi.json",
     lifespan=lifespan,
 )
 
@@ -64,11 +64,9 @@ async def usso_exception_handler(request: fastapi.Request, exc: USSOException):
 
 @app.exception_handler(pydantic.ValidationError)
 @app.exception_handler(fastapi.exceptions.ResponseValidationError)
-@app.exception_handler(fastapi.exceptions.RequestValidationError)
 async def pydantic_exception_handler(
     request: fastapi.Request, exc: pydantic.ValidationError
 ):
-    logging.error(f"Validation error: {request.url} {exc}")
     return JSONResponse(
         status_code=500,
         content={
@@ -106,15 +104,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.add_middleware(middlewares.OriginalHostMiddleware)
+from apps.stocks.routes import router as stocks_router
 
-from apps.business.routes import router as business_router
-from apps.imagination.routes import router as imagination_router
-
-app.include_router(
-    business_router, prefix=f"{config.Settings.base_path}", include_in_schema=False
-)
-app.include_router(imagination_router, prefix=f"{config.Settings.base_path}")
+app.include_router(stocks_router, prefix=f"{config.Settings.base_path}")
 
 
 @app.get(f"{config.Settings.base_path}/health")
@@ -133,3 +125,13 @@ async def health(request: fastapi.Request):
         "forwarded_proto": forwarded_proto,
         "forwarded_for": forwarded_for,
     }
+
+
+@app.get("/openapi.json", include_in_schema=False)
+async def openapi():
+    openapi = app.openapi()
+    paths = {}
+    for path in openapi["paths"]:
+        paths[f"{config.Settings.base_path}{path}"] = openapi["paths"][path]
+    openapi["paths"] = paths
+    return openapi

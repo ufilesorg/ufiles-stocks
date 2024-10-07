@@ -18,11 +18,10 @@ class Settings(metaclass=Singleton):
 
     root_url: str = os.getenv("DOMAIN", default="http://localhost:8000")
     mongo_uri: str = os.getenv("MONGO_URI", default="mongodb://mongo:27017/")
-    project_name: str = os.getenv("PROJECT_NAME", default="Imagine")
+    project_name: str = os.getenv("PROJECT_NAME", default="Stock Images")
     base_dir: Path = Path(__file__).resolve().parent.parent
-    base_path: str = "/v1/apps/imagine"
+    base_path: str = "/v1/apps/stocks"
     page_max_limit: int = 100
-    update_time: int = 60
 
     app_id: str = os.getenv("APP_ID")
     app_secret: str = os.getenv("APP_SECRET")
@@ -32,8 +31,12 @@ class Settings(metaclass=Singleton):
         default='{"jwk_url": "https://usso.io/website/jwks.json","type": "RS256","header": {"type": "Cookie", "name": "usso_access_token"} }',
     )
 
-    METIS_API_KEY: str = os.getenv("METIS_API_KEY")
-    METIS_BOT_ID: str = os.getenv("METIS_BOT_ID")
+    FREEPIK_API_KEY: str = os.getenv("FREEPIK_API_KEY")
+    SHUTTERSTOCK_API_KEY: str = os.getenv("SHUTTERSTOCK_API_KEY")
+    DECODL_APP_KEY: str = os.getenv("DECODL_APP_KEY")
+    DECODL_APP_SECRET: str = os.getenv("DECODL_APP_SECRET")
+    DECODL_ACCESS_TOKEN: str = os.getenv("DECODL_ACCESS_TOKEN")
+    DECODL_REFRESH_TOKEN: str = os.getenv("DECODL_REFRESH_TOKEN")
 
     testing: bool = os.getenv("TESTING", default=False)
 
