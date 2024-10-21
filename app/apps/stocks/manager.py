@@ -1,11 +1,17 @@
 import asyncio
+from urllib.parse import urlparse
+from PIL import Image
 
 import aiohttp
 from server.config import Settings
 from singleton import Singleton
-from utils.aionetwork import aio_request_session
+from fastapi_mongo_base._utils.aionetwork import (
+    aio_request_session,
+    aio_request_binary_session,
+)
 
 from .schemas import StockImage
+from .services import upload_images
 
 
 class BaseStockImageManager(metaclass=Singleton):
@@ -181,7 +187,7 @@ class BaseStockImageManager(metaclass=Singleton):
                 res = await response.json()
                 return res["accessToken"]
 
-    async def get_job(self, job_id):
+    async def get_job(self, job_id, user_id, **kwargs):
         async with aiohttp.ClientSession() as session:
             headers = {
                 "Content-Type": "application/json",
@@ -193,6 +199,27 @@ class BaseStockImageManager(metaclass=Singleton):
             import logging
 
             logging.info(f"get_job: {res}")
+
+            if res.get("progress") == 100 and "downloadLink" in res:
+                asyncio.create_task(
+                    self.download_job_session(
+                        session, res.get("downloadLink"), user_id, kwargs
+                    )
+                )
             # res.pop("balance", None)
 
             return res
+
+    async def download_job_session(self, session, url, user_id, **kwargs):
+        job_bytes = await aio_request_binary_session(session=session, url=url)
+        images = [Image.open(job_bytes)]
+        url_path_parts = urlparse(url).path.split("/")
+        filename = kwargs.get(
+            "prompt",
+            kwargs.get(
+                "filename",
+                url_path_parts[-2] if len(url_path_parts) > 1 else "stock_photo",
+            ),
+        )
+
+        await upload_images(images, user_id=user_id, filename=filename)

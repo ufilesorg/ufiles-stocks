@@ -10,4 +10,13 @@ ipython
 
 aiohttp
 aiofiles
-usso
+aiocache
+usso[fastapi]
+
+beanie
+fastapi-mongo-base
+
+metisai
+langdetect
+pillow
+apscheduler

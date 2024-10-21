@@ -2,10 +2,11 @@ import logging
 from typing import Literal
 
 import fastapi
+from fastapi import Query
 from core import exceptions
 from usso import UserData
 from usso.fastapi.integration import jwt_access_security
-
+from server.config import Settings
 from .freepik import FreePikManager
 from .schemas import StockImage, StockImageRequest
 from .shutterstock import ShutterStockManager
@@ -23,14 +24,14 @@ async def search(
     request: fastapi.Request,
     provider: Literal["freepik", "shutterstock"],
     q: str,
-    page: int = 1,
-    limit: int = 10,
+    page: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=Settings.page_max_limit),
     _: UserData = fastapi.Depends(jwt_access_security),
 ):
     params = dict(request.query_params)
     params["page"] = page
     params["limit"] = limit
-    logging.info(f"search params: {params}")
+    # logging.info(f"search params: {params}")
     try:
         match provider:
             case "freepik":
@@ -79,14 +80,14 @@ async def get_job_status(
     request: fastapi.Request,
     provider: Literal["freepik", "shutterstock"],
     job_id: str,
-    _: UserData = fastapi.Depends(jwt_access_security),
+    user: UserData = fastapi.Depends(jwt_access_security),
 ):
     try:
         match provider:
             case "freepik":
-                return await FreePikManager().get_job(job_id)
+                return await FreePikManager().get_job(job_id, user_id=user.uid)
             case "shutterstock":
-                return await ShutterStockManager().get_job(job_id)
+                return await ShutterStockManager().get_job(job_id, user_id=user.uid)
             case _:
                 raise exceptions.BaseHTTPException(
                     status_code=400,
