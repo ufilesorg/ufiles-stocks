@@ -3,8 +3,9 @@ import os
 import random
 
 import aiohttp
-from .schemas import StockBaseImage, StockImage
 from fastapi_mongo_base._utils.aionetwork import aio_request, aio_request_session
+
+from .schemas import StockBaseImage, StockImage
 
 
 async def get_freepik(row: dict, session: aiohttp.ClientSession = None):

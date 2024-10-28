@@ -38,6 +38,7 @@ app = fastapi.FastAPI(
         "url": "https://github.com/mahdikiani/FastAPILaunchpad/blob/main/LICENSE",
     },
     docs_url=f"{config.Settings.base_path}/docs",
+    redoc_url=f"{config.Settings.base_path}/redoc",
     openapi_url=f"{config.Settings.base_path}/openapi.json",
     # openapi_url="/v1/apps/imagine/openapi.json",
     lifespan=lifespan,
@@ -105,8 +106,10 @@ app.add_middleware(
 )
 
 from apps.stocks.routes import router as stocks_router
+from apps.stocks.routes import stock_image_router
 
 app.include_router(stocks_router, prefix=f"{config.Settings.base_path}")
+app.include_router(stock_image_router, prefix=f"{config.Settings.base_path}")
 
 
 @app.get(f"{config.Settings.base_path}/health")

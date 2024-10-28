@@ -2,8 +2,8 @@ import asyncio
 import random
 
 import aiohttp
-from server.config import Settings
 from fastapi_mongo_base._utils.aionetwork import aio_request, aio_request_session
+from server.config import Settings
 
 from .manager import BaseStockImageManager
 from .schemas import StockBaseImage, StockImage

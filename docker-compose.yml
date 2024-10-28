@@ -1,4 +1,4 @@
-services:  
+services:
   stocks:
     build: app
     restart: unless-stopped
@@ -10,11 +10,14 @@ services:
     volumes:
       - ./app:/app
     networks:
+      - mongo-net
       - ufiles-stg-net
       - ufiles-net
-      
+
 networks:
   traefik-net:
+    external: true
+  mongo-net:
     external: true
   ufiles-stg-net:
     external: true

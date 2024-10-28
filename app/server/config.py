@@ -22,6 +22,7 @@ class Settings(metaclass=Singleton):
     base_dir: Path = Path(__file__).resolve().parent.parent
     base_path: str = "/v1/apps/stocks"
     page_max_limit: int = 100
+    update_time: int = 60
 
     app_id: str = os.getenv("APP_ID")
     app_secret: str = os.getenv("APP_SECRET")
@@ -37,6 +38,8 @@ class Settings(metaclass=Singleton):
     DECODL_APP_SECRET: str = os.getenv("DECODL_APP_SECRET")
     DECODL_ACCESS_TOKEN: str = os.getenv("DECODL_ACCESS_TOKEN")
     DECODL_REFRESH_TOKEN: str = os.getenv("DECODL_REFRESH_TOKEN")
+    DECODL_USERNAME: str = os.getenv("DECODL_USERNAME")
+    DECODL_PASSWORD: str = os.getenv("DECODL_PASSWORD")
 
     testing: bool = os.getenv("TESTING", default=False)
 

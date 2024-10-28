@@ -15,6 +15,7 @@ usso[fastapi]
 
 beanie
 fastapi-mongo-base
+ufaas-fastapi-business
 
 metisai
 langdetect
