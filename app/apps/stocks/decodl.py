@@ -1,6 +1,6 @@
 import os
 
-from fastapi_mongo_base._utils.aionetwork import aio_request
+from fastapi_mongo_base.utils.aionetwork import aio_request
 from singleton import Singleton
 
 

@@ -2,8 +2,8 @@ import logging
 from typing import Literal
 
 import fastapi
-from core import exceptions
 from fastapi import BackgroundTasks, Query
+from fastapi_mongo_base.core import exceptions
 from fastapi_mongo_base.routes import AbstractTaskRouter
 from server.config import Settings
 from usso import UserData

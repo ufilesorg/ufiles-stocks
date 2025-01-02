@@ -7,12 +7,11 @@ from datetime import datetime
 from io import BytesIO
 from urllib.parse import urlparse
 
-from fastapi_mongo_base._utils.aionetwork import aio_request_binary
-from fastapi_mongo_base._utils.basic import delay_execution, try_except_wrapper
+import ufiles
+from fastapi_mongo_base.utils.aionetwork import aio_request_binary
+from fastapi_mongo_base.utils.basic import delay_execution, try_except_wrapper
 from PIL import Image
 from server.config import Settings
-from usso.async_session import AsyncUssoSession
-from utils import ufiles
 
 from .decodl import Decodl
 from .schemas import StockImageProvider
@@ -50,20 +49,15 @@ async def upload_image(
     )
     # image_bytes = imagetools.convert_to_webp_bytes(image)
     image_bytes.name = f"{image_name}.webp"
-    async with AsyncUssoSession(
-        ufiles.AsyncUFiles().refresh_url,
-        ufiles.AsyncUFiles().refresh_token,
-    ) as client:
-        return await ufiles.AsyncUFiles().upload_bytes_session(
-            client,
-            image_bytes,
-            filename=f"{file_upload_dir}/{image_bytes.name}",
-            public_permission=json.dumps({"permission": ufiles.PermissionEnum.READ}),
-            user_id=str(user_id),
-            meta_data={
-                "filename": filename,
-            },
-        )
+    return await ufiles.AsyncUFiles().upload_bytes(
+        image_bytes,
+        filename=f"{file_upload_dir}/{image_bytes.name}",
+        public_permission=json.dumps({"permission": ufiles.PermissionEnum.READ}),
+        user_id=str(user_id),
+        meta_data={
+            "filename": filename,
+        },
+    )
 
 
 async def upload_images(
@@ -74,33 +68,27 @@ async def upload_images(
 ):
     image_name = sanitize_filename(filename)
 
-    async with AsyncUssoSession(
-        ufiles.AsyncUFiles().refresh_url,
-        ufiles.AsyncUFiles().refresh_token,
-    ) as client:
-        uploaded_items = [
-            await upload_image(
-                client,
-                images[0],
-                image_name=f"{image_name}_{1}",
+    uploaded_items = [
+        await upload_image(
+            images[0],
+            image_name=f"{image_name}_{1}",
+            user_id=user_id,
+            filename=filename,
+            file_upload_dir=file_upload_dir,
+        )
+    ]
+    uploaded_items += await asyncio.gather(
+        *[
+            upload_image(
+                image,
+                image_name=f"{image_name}_{i+2}",
                 user_id=user_id,
                 filename=filename,
                 file_upload_dir=file_upload_dir,
             )
+            for i, image in enumerate(images[1:])
         ]
-        uploaded_items += await asyncio.gather(
-            *[
-                upload_image(
-                    client,
-                    image,
-                    image_name=f"{image_name}_{i+2}",
-                    user_id=user_id,
-                    filename=filename,
-                    file_upload_dir=file_upload_dir,
-                )
-                for i, image in enumerate(images[1:])
-            ]
-        )
+    )
 
     return uploaded_items
 

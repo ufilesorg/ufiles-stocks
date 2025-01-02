@@ -1,8 +1,7 @@
 import asyncio
 import random
 
-import aiohttp
-from fastapi_mongo_base._utils.aionetwork import aio_request, aio_request_session
+from fastapi_mongo_base.utils.aionetwork import aio_request
 from server.config import Settings
 
 from .manager import BaseStockImageManager
@@ -22,17 +21,12 @@ class FreePikManager(BaseStockImageManager):
         }
         self.provider = "freepik"
 
-    async def get_row(self, row: dict, session: aiohttp.ClientSession = None):
+    async def get_row(self, row: dict, **kwargs):
         id = row.get("id")
         await asyncio.sleep(random.uniform(0.1, 0.3))
         url = f"{self.base_url}/{id}"
 
-        if session is None:
-            response = await aio_request(url=url, headers=self.headers)
-        else:
-            response = await aio_request_session(
-                session=session, url=url, headers=self.headers
-            )
+        response = await aio_request(url=url, headers=self.headers)
 
         response_data: dict = response.get("data", {})
 

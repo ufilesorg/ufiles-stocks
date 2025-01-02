@@ -3,7 +3,7 @@ import os
 import random
 
 import aiohttp
-from fastapi_mongo_base._utils.aionetwork import aio_request, aio_request_session
+from fastapi_mongo_base.utils.aionetwork import aio_request
 
 from .schemas import StockBaseImage, StockImage
 
@@ -18,10 +18,7 @@ async def get_freepik(row: dict, session: aiohttp.ClientSession = None):
         "Content-Type": "application/json",
         "X-Freepik-API-Key": os.getenv("FREEPIK_API_KEY"),
     }
-    if session is None:
-        response = await aio_request(url=url, headers=headers)
-    else:
-        response = await aio_request_session(session=session, url=url, headers=headers)
+    response = await aio_request(url=url, headers=headers)
 
     freepik_object = StockImage(
         id=id,

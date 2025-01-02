@@ -1,7 +1,6 @@
 import asyncio
 
-import aiohttp
-from fastapi_mongo_base._utils.aionetwork import aio_request_session
+from fastapi_mongo_base.utils.aionetwork import aio_request
 from server.config import Settings
 from singleton import Singleton
 
@@ -28,9 +27,7 @@ class BaseStockImageManager(metaclass=Singleton):
             password=Settings.DECODL_PASSWORD,
         )
 
-    async def get_row(
-        self, row: dict, session: aiohttp.ClientSession = None
-    ) -> StockImage:
+    async def get_row(self, row: dict, **kwargs) -> StockImage:
         raise NotImplementedError
 
     def get_search_params(
@@ -43,20 +40,18 @@ class BaseStockImageManager(metaclass=Singleton):
         limit = max(1, min(20, limit))
         params = self.get_search_params(q=q, page=page, limit=limit, **kwargs)
 
-        async with aiohttp.ClientSession() as session:
-            res = await aio_request_session(
-                session=session,
-                url=self.base_url,
-                headers=self.headers,
-                params=params,
-            )
-            stock_image_tasks = [self.get_row(row, session) for row in res["data"]]
-            stock_images = await asyncio.gather(*stock_image_tasks)
+        res = await aio_request(
+            url=self.base_url,
+            headers=self.headers,
+            params=params,
+        )
+        stock_image_tasks = [self.get_row(row) for row in res["data"]]
+        stock_images = await asyncio.gather(*stock_image_tasks)
 
         return stock_images
 
     async def download(self, code: int, user_id: str, **kwargs):
-        return download(self.decodl, self.provider, code, user_id, **kwargs)
+        return await download(self.decodl, self.provider, code, user_id, **kwargs)
 
     async def get_job(self, job_id, user_id, **kwargs):
         response = await self.decodl.get_job(job_id)

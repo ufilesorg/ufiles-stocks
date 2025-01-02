@@ -1,4 +1,3 @@
-import aiohttp
 from server.config import Settings
 
 from .manager import BaseStockImageManager
@@ -18,7 +17,7 @@ class ShutterStockManager(BaseStockImageManager):
         }
         self.provider = "shutterstock"
 
-    async def get_row(self, row: dict, session: aiohttp.ClientSession = None):
+    async def get_row(self, row: dict, **kwargs):
         id = row.get("id")
         # await asyncio.sleep(random.uniform(0.1, 0.3))
         assets: dict = row.get("assets", {})

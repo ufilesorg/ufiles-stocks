@@ -1,6 +1,7 @@
 uvicorn
 fastapi
 pydantic
+httpx
 
 singleton_package
 json-advanced
@@ -8,16 +9,17 @@ python-dotenv
 debugpy
 ipython
 
-aiohttp
 aiofiles
 aiocache
-usso[fastapi]
 
 beanie
 fastapi-mongo-base
 ufaas-fastapi-business
 
-metisai
-langdetect
-pillow
 apscheduler
+pytz
+pillow
+
+ufiles
+ufaas
+usso[fastapi]
