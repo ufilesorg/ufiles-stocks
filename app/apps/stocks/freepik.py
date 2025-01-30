@@ -33,12 +33,14 @@ class FreePikManager(BaseStockImageManager):
         result = StockImage(
             id=id,
             original=StockBaseImage(
-                url=response_data.get("url"),
+                url=self.get_proxied_url(response_data.get("url"), 1500, 1500),
                 width=response_data.get("dimensions", {}).get("width", 1),
                 height=response_data.get("dimensions", {}).get("height", 1),
             ),
             preview=StockBaseImage(
-                url=response_data.get("preview", {}).get("url"),
+                url=self.get_proxied_url(
+                    response_data.get("preview", {}).get("url"), 1500, 1500
+                ),
                 width=response_data.get("preview", {}).get("width", 1),
                 height=response_data.get("preview", {}).get("height", 1),
             ),

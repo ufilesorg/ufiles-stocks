@@ -1,4 +1,7 @@
 import asyncio
+import base64
+import hashlib
+import hmac
 
 from fastapi_mongo_base.utils.aionetwork import aio_request
 from server.config import Settings
@@ -26,6 +29,22 @@ class BaseStockImageManager(metaclass=Singleton):
             username=Settings.DECODL_USERNAME,
             password=Settings.DECODL_PASSWORD,
         )
+
+        self.imgproxy_key = Settings.IMGPROXY_KEY
+        self.imgproxy_salt = Settings.IMGPROXY_SALT
+
+    def sign_imgproxy_url(self, path: str) -> str:
+        key_binary = bytes.fromhex(self.imgproxy_key)
+        salt_binary = bytes.fromhex(self.imgproxy_salt)
+        signature = hmac.new(
+            key_binary, msg=salt_binary + path.encode(), digestmod=hashlib.sha256
+        ).digest()
+        return base64.urlsafe_b64encode(signature).rstrip(b"=").decode()
+
+    def get_proxied_url(self, url: str, width: int = 0, height: int = 0) -> str:
+        path = f"/resize:fit:{width}:{height}/plain/{url}"
+        signature = self.sign_imgproxy_url(path)
+        return f"{Settings.IMGPROXY_URL}/{signature}{path}"
 
     async def get_row(self, row: dict, **kwargs) -> StockImage:
         raise NotImplementedError

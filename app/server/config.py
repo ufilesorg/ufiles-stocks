@@ -26,3 +26,7 @@ class Settings(BaseSettings):
     DECODL_REFRESH_TOKEN: str = os.getenv("DECODL_REFRESH_TOKEN")
     DECODL_USERNAME: str = os.getenv("DECODL_USERNAME")
     DECODL_PASSWORD: str = os.getenv("DECODL_PASSWORD")
+
+    IMGPROXY_KEY: str = os.getenv("IMGPROXY_KEY")
+    IMGPROXY_SALT: str = os.getenv("IMGPROXY_SALT")
+    IMGPROXY_URL: str = os.getenv("IMGPROXY_URL")

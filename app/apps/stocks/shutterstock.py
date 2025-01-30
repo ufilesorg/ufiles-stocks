@@ -23,17 +23,17 @@ class ShutterStockManager(BaseStockImageManager):
         assets: dict = row.get("assets", {})
         preview: dict = assets.get("preview", {})
         preview_1500: dict = assets.get("preview_1500", {})
-        f"{self.base_url}/{id}"
+        # f"{self.base_url}/{id}"
 
         result = StockImage(
             id=id,
             original=StockBaseImage(
-                url=preview_1500.get("url"),
+                url=self.get_proxied_url(preview_1500.get("url"), 1500, 1500),
                 width=preview_1500.get("width", 1),
                 height=preview_1500.get("height", 1),
             ),
             preview=StockBaseImage(
-                url=preview.get("url"),
+                url=self.get_proxied_url(preview.get("url"), 1500, 1500),
                 width=preview.get("width", 1),
                 height=preview.get("height", 1),
             ),
