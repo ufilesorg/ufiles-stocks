@@ -1,15 +1,13 @@
 import asyncio
 import json
 import logging
-import re
 import uuid
 from datetime import datetime
 from io import BytesIO
 from urllib.parse import urlparse
 
 import ufiles
-from fastapi_mongo_base.utils.aionetwork import aio_request_binary
-from fastapi_mongo_base.utils.basic import delay_execution, try_except_wrapper
+from fastapi_mongo_base.utils import aionetwork, basic, texttools
 from PIL import Image
 from server.config import Settings
 
@@ -17,26 +15,7 @@ from .decodl import Decodl
 from .schemas import StockImageProvider
 
 
-def sanitize_filename(name: str) -> str:
-    # Remove characters not safe or meaningful in filenames, and replace spaces/hyphens with underscores
-    sanitized = re.sub(r"[^a-zA-Z0-9_. ]", "", name)
-
-    # Replace spaces and hyphens with underscores
-    sanitized = re.sub(r"[ \-]", "_", sanitized)
-
-    # Remove multiple consecutive underscores
-    sanitized = re.sub(r"_+", "_", sanitized)
-
-    # Optionally, remove leading or trailing underscores
-    sanitized = sanitized.strip("_")
-    position = sanitized.find("_", 80, 120)
-    if position == -1:
-        position = 100
-
-    return sanitized[:position]
-
-
-@try_except_wrapper
+@basic.try_except_wrapper
 async def upload_image(
     image_bytes: BytesIO,
     user_id: uuid.UUID,
@@ -45,19 +24,28 @@ async def upload_image(
 ):
     now = datetime.now()
     image_name = (
-        sanitize_filename(filename) if filename else f"stock_photo {now:%y.%2m.%2d}"
+        texttools.sanitize_filename(filename)
+        if filename
+        else f"stock_photo {now:%y.%2m.%2d}"
     )
     # image_bytes = imagetools.convert_to_webp_bytes(image)
     image_bytes.name = f"{image_name}.webp"
-    return await ufiles.AsyncUFiles().upload_bytes(
-        image_bytes,
-        filename=f"{file_upload_dir}/{image_bytes.name}",
-        public_permission=json.dumps({"permission": ufiles.PermissionEnum.READ}),
-        user_id=str(user_id),
-        meta_data={
-            "filename": filename,
-        },
-    )
+    async with ufiles.AsyncUFiles(
+        ufiles_base_url=Settings.UFILES_BASE_URL,
+        usso_base_url=Settings.USSO_BASE_URL,
+        api_key=Settings.UFILES_API_KEY,
+    ) as client:
+        uploaded = await client.upload_bytes(
+            image_bytes,
+            filename=f"{file_upload_dir}/{image_bytes.name}",
+            public_permission=json.dumps({"permission": ufiles.PermissionEnum.READ}),
+            user_id=str(user_id),
+            meta_data={
+                "filename": filename,
+            },
+        )
+
+    return uploaded
 
 
 async def upload_images(
@@ -66,7 +54,7 @@ async def upload_images(
     filename: str,
     file_upload_dir="stock photos",
 ):
-    image_name = sanitize_filename(filename)
+    image_name = texttools.sanitize_filename(filename)
 
     uploaded_items = [
         await upload_image(
@@ -101,9 +89,9 @@ async def download(
     asyncio.create_task(update_dl_job(decodl, job_id, user_id, **kwargs))
 
 
-@try_except_wrapper
+@basic.try_except_wrapper
 async def download_job(url, user_id, **kwargs):
-    job_bytes = await aio_request_binary(url=url)
+    job_bytes = await aionetwork.aio_request_binary(url=url)
     # image = Image.open(job_bytes)
     url_path_parts = urlparse(url).path.split("/")
     filename = kwargs.get(
@@ -124,8 +112,8 @@ def check_job(response: dict, job_id: str, user_id, **kwargs):
         asyncio.create_task(download_job(response["downloadLink"], user_id, **kwargs))
 
 
-@try_except_wrapper
-@delay_execution(Settings.update_time)
+@basic.try_except_wrapper
+@basic.delay_execution(Settings.update_time)
 async def update_dl_job(decodl: Decodl, job_id, user_id, **kwargs):
     response = await decodl.get_job(job_id)
     if response.get("error") == "error":

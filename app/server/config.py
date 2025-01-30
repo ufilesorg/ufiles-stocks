@@ -30,3 +30,7 @@ class Settings(BaseSettings):
     IMGPROXY_KEY: str = os.getenv("IMGPROXY_KEY")
     IMGPROXY_SALT: str = os.getenv("IMGPROXY_SALT")
     IMGPROXY_URL: str = os.getenv("IMGPROXY_URL")
+
+    UFILES_BASE_URL: str = os.getenv("UFILES_BASE_URL")
+    USSO_BASE_URL: str = os.getenv("USSO_BASE_URL")
+    UFILES_API_KEY: str = os.getenv("UFILES_API_KEY")
