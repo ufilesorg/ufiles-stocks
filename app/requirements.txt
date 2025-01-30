@@ -8,7 +8,6 @@ json-advanced
 python-dotenv
 debugpy
 ipython
-email-validator
 
 aiofiles
 aiocache
