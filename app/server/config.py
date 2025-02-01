@@ -34,3 +34,6 @@ class Settings(config.Settings):
     UFILES_BASE_URL: str = os.getenv("UFILES_BASE_URL")
     USSO_BASE_URL: str = os.getenv("USSO_BASE_URL")
     UFILES_API_KEY: str = os.getenv("UFILES_API_KEY")
+    UFAAS_RESOURCE_VARIANT: str = os.getenv("UFAAS_RESOURCE_VARIANT", "stock-images")
+
+    decodl_ratio_coin: float = 10

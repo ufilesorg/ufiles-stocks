@@ -1,7 +1,7 @@
 uvicorn
 fastapi
 pydantic[email]
-httpx
+httpx[socks]
 
 singleton_package
 json-advanced

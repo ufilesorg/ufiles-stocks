@@ -1,6 +1,8 @@
 import os
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
-from fastapi_mongo_base.utils.aionetwork import aio_request
+import httpx
 from singleton import Singleton
 
 
@@ -16,7 +18,9 @@ class Decodl(metaclass=Singleton):
         refresh_token: str = os.getenv("DECODL_REFRESH_TOKEN"),
         access_token: str = os.getenv("DECODL_ACCESS_TOKEN"),
     ):
-        self.base_url = "https://decodl.net/api"
+        # self.base_url = "https://decodl.net/api"
+        self.base_url = "https://decodl.ir/api"
+        self.proxy = os.getenv("IR_PROXY")
 
         if (
             (app_key is None or app_secret is None)
@@ -62,6 +66,18 @@ class Decodl(metaclass=Singleton):
             "x-app-key": self.app_key,
         }
 
+    @asynccontextmanager
+    async def get_client(
+        self, headers: dict = None
+    ) -> AsyncGenerator[httpx.AsyncClient, None]:
+        client = httpx.AsyncClient(
+            proxy=self.proxy, base_url=self.base_url, headers=headers
+        )
+        try:
+            yield client
+        finally:
+            await client.aclose()
+
     def __repr__(self) -> str:
         import json
 
@@ -71,7 +87,6 @@ class Decodl(metaclass=Singleton):
         if self.username is None or self.password is None:
             raise ValueError("Must provide username and password to login")
 
-        login_url = f"{self.base_url}/auth/login"
         data = {
             "username": self.username,
             "password": self.password,
@@ -79,9 +94,12 @@ class Decodl(metaclass=Singleton):
                 "BASIC",
             ],
         }
-        response = await aio_request(method="post", url=login_url, json=data)
-        self.refresh_token = response.get("refreshToken")
-        self.access_token = response.get("accessToken")
+        async with self.get_client() as client:
+            response = await client.post("/auth/login", json=data)
+            response.raise_for_status()
+            response_json: dict = response.json()
+            self.refresh_token = response_json.get("refreshToken")
+            self.access_token = response_json.get("accessToken")
 
     async def refresh(self):
         cookies = {
@@ -92,11 +110,11 @@ class Decodl(metaclass=Singleton):
             "accept": "application/json",
             "authorization": f"Bearer {self.access_token}",
         }
-        refresh_url = f"{self.base_url}/auth/refresh"
-        response = await aio_request(
-            method="post", url=refresh_url, cookies=cookies, headers=headers
-        )
-        self.access_token = response.get("accessToken")
+        async with self.get_client(headers=headers) as client:
+            response = await client.post("/auth/refresh")  # , cookies=cookies)
+            response.raise_for_status()
+            response_json: dict = response.json()
+            self.access_token = response_json.get("accessToken")
 
     async def get_api_key(self):
         cookies = {
@@ -112,15 +130,17 @@ class Decodl(metaclass=Singleton):
             "customErrorHandle": "false",
         }
         # 'https://decodl.net/api/auth/application/decodl/token?reset=false&customErrorHandle=true'
-        response = await aio_request(
-            method="post",
-            url=f"{self.base_url}/auth/application/decodl/token",
-            # cookies=cookies,
-            headers=headers,
-            params=params,
-        )
-        self.app_key = response.get("appCredential", {}).get("clientId", {})
-        self.app_secret = response.get("accessToken")
+        async with httpx.AsyncClient(proxy=self.proxy) as client:
+            response = await client.post(
+                f"{self.base_url}/auth/application/decodl/token",
+                # cookies=cookies,
+                headers=headers,
+                params=params,
+            )
+            response.raise_for_status()
+            response_json: dict = response.json()
+            self.app_key = response_json.get("appCredential", {}).get("clientId", {})
+            self.app_secret = response_json.get("accessToken")
 
     async def download(self, provider: str, code: int):
         if provider not in [
@@ -140,17 +160,38 @@ class Decodl(metaclass=Singleton):
         ]:
             raise NotImplementedError
 
-        url = f"{self.base_url}/product/dev"
-        headers = await self.get_headers()
         data = {"code": str(code), "providerName": provider}
-        response = await aio_request(method="post", url=url, headers=headers, json=data)
-        return response
+        async with self.get_client(headers=await self.get_headers()) as client:
+            response = await client.post("/product/dev", json=data)
+            response.raise_for_status()
+            response_json: dict = response.json()
+            return response_json
 
     async def get_job(self, job_id):
-        url = f"{self.base_url}/job/dev/{job_id}"
-        headers = await self.get_headers()
-        response = await aio_request(method="get", url=url, headers=headers)
-        return response
+        async with self.get_client(headers=await self.get_headers()) as client:
+            response = await client.get(f"/job/dev/{job_id}")
+            response.raise_for_status()
+            response_json: dict = response.json()
+            return response_json
+
+    async def get_cost(self, code: int, provider: str):
+        data = {
+            "code": str(code),
+            "link": "",
+            "options": [
+                {
+                    "name": "",
+                    "value": "",
+                },
+            ],
+            "providerName": provider,
+        }
+
+        async with self.get_client(headers=await self.get_headers()) as client:
+            response = await client.post("/product/dev/info", json=data)
+            response.raise_for_status()
+            response_json: dict = response.json()
+            return response_json
 
 
 if __name__ == "__main__":

@@ -8,7 +8,6 @@ from urllib.parse import urlparse
 
 import ufiles
 from fastapi_mongo_base.utils import aionetwork, basic, texttools
-from PIL import Image
 from server.config import Settings
 
 from .decodl import Decodl
@@ -48,45 +47,13 @@ async def upload_image(
     return uploaded
 
 
-async def upload_images(
-    images: list[Image.Image],
-    user_id: uuid.UUID,
-    filename: str,
-    file_upload_dir="stock photos",
-):
-    image_name = texttools.sanitize_filename(filename)
-
-    uploaded_items = [
-        await upload_image(
-            images[0],
-            image_name=f"{image_name}_{1}",
-            user_id=user_id,
-            filename=filename,
-            file_upload_dir=file_upload_dir,
-        )
-    ]
-    uploaded_items += await asyncio.gather(
-        *[
-            upload_image(
-                image,
-                image_name=f"{image_name}_{i+2}",
-                user_id=user_id,
-                filename=filename,
-                file_upload_dir=file_upload_dir,
-            )
-            for i, image in enumerate(images[1:])
-        ]
-    )
-
-    return uploaded_items
-
-
 async def download(
     decodl: Decodl, provider: StockImageProvider, code: int, user_id: str, **kwargs
 ):
     response = await decodl.download(provider, code)
     job_id = response.get("jobId")
     asyncio.create_task(update_dl_job(decodl, job_id, user_id, **kwargs))
+    return response
 
 
 @basic.try_except_wrapper
@@ -105,11 +72,11 @@ async def download_job(url, user_id, **kwargs):
     await upload_image(job_bytes, user_id=user_id, filename=filename)
 
 
-def check_job(response: dict, job_id: str, user_id, **kwargs):
+async def check_job(response: dict, job_id: str, user_id, **kwargs):
     progress = response.get("progress", 0)
     if progress == 100 and "downloadLink" in response:
         logging.info(f"Downloading job {user_id=} {job_id=}")
-        asyncio.create_task(download_job(response["downloadLink"], user_id, **kwargs))
+        return await download_job(response["downloadLink"], user_id, **kwargs)
 
 
 @basic.try_except_wrapper
@@ -122,7 +89,6 @@ async def update_dl_job(decodl: Decodl, job_id, user_id, **kwargs):
 
     if response.get("progress") == 100:
         logging.info(f"Image downloaded from decodl: {response}")
-        check_job(response, job_id, user_id, **kwargs)
-        return
+        return await check_job(response, job_id, user_id, **kwargs)
 
     asyncio.create_task(update_dl_job(decodl, job_id, user_id, **kwargs))

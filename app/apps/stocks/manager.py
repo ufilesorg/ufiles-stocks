@@ -3,6 +3,7 @@ import base64
 import hashlib
 import hmac
 
+from fastapi_mongo_base.core import exceptions
 from fastapi_mongo_base.utils.aionetwork import aio_request
 from server.config import Settings
 from singleton import Singleton
@@ -13,6 +14,8 @@ from .services import check_job, download
 
 
 class BaseStockImageManager(metaclass=Singleton):
+    provider = None
+
     def __init__(self, api_key: str = None):
         self.api_key = api_key
         self.base_url: str = ""
@@ -22,7 +25,6 @@ class BaseStockImageManager(metaclass=Singleton):
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
         }
-        self.provider = None
         self.decodl = Decodl(
             app_secret=Settings.DECODL_APP_SECRET,
             app_key=Settings.DECODL_APP_KEY,
@@ -32,6 +34,17 @@ class BaseStockImageManager(metaclass=Singleton):
 
         self.imgproxy_key = Settings.IMGPROXY_KEY
         self.imgproxy_salt = Settings.IMGPROXY_SALT
+
+    @classmethod
+    def get_child(cls, provider: str):
+        for child in cls.__subclasses__():
+            if child.provider == provider:
+                return child()
+        raise exceptions.BaseHTTPException(
+            status_code=400,
+            error="invalid_provider",
+            message=f"Provider {provider} not found",
+        )
 
     def sign_imgproxy_url(self, path: str) -> str:
         key_binary = bytes.fromhex(self.imgproxy_key)
@@ -76,3 +89,6 @@ class BaseStockImageManager(metaclass=Singleton):
         response = await self.decodl.get_job(job_id)
         check_job(response, job_id, user_id, **kwargs)
         return response
+
+    async def get_cost(self, code: int, **kwargs):
+        return await self.decodl.get_cost(code, self.provider, **kwargs)

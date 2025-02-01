@@ -1,23 +1,24 @@
-import logging
 from typing import Literal
 
 import fastapi
 from fastapi import BackgroundTasks, Query
-from fastapi_mongo_base.core import exceptions
 from fastapi_mongo_base.routes import AbstractTaskRouter
 from server.config import Settings
 from usso import UserData
 from usso.fastapi.integration import jwt_access_security
+from utils import finance
 
-from .freepik import FreePikManager
+from .manager import BaseStockImageManager
 from .models import StockImageDownload
+from .providers import freepik, shutterstock
 from .schemas import (
     StockImage,
     StockImageCreateSchema,
     StockImageDownloadSchema,
     StockImageRequest,
 )
-from .shutterstock import ShutterStockManager
+
+__all__ = ["freepik", "shutterstock"]
 
 
 class StockImageRouter(
@@ -33,29 +34,7 @@ class StockImageRouter(
         )
 
     def config_routes(self, **kwargs):
-        self.router.add_api_route(
-            "/",
-            self.list_items,
-            methods=["GET"],
-            response_model=self.list_response_schema,
-            status_code=200,
-        )
-        self.router.add_api_route(
-            "/{uid:uuid}",
-            self.retrieve_item,
-            methods=["GET"],
-            response_model=self.retrieve_response_schema,
-            status_code=200,
-        )
-        self.router.add_api_route(
-            "/",
-            self.create_item,
-            methods=["POST"],
-            response_model=self.create_response_schema,
-            status_code=201,
-            summary="Create Stock Image Request",
-            # description="Create a new stock image download request item.",
-        )
+        super().config_routes(update_route=False, delete_route=False)
 
     async def create_item(
         self,
@@ -102,33 +81,15 @@ async def search(
     q: str,
     page: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=Settings.page_max_limit),
-    _: UserData = fastapi.Depends(jwt_access_security),
 ):
+    user: UserData = jwt_access_security(request)
+
     params = dict(request.query_params)
     params["page"] = page
     params["limit"] = limit
     # logging.info(f"search params: {params}")
-    try:
-        match provider:
-            case "freepik":
-                return await FreePikManager().search(**params)
-            case "shutterstock":
-                return await ShutterStockManager().search(**params)
-            case _:
-                raise exceptions.BaseHTTPException(
-                    status_code=400,
-                    error="Bad Request",
-                    message=f"Unknown provider {provider}",
-                )
-
-    except Exception as e:
-        logging.error(f"image query: {e}")
-
-        raise exceptions.BaseHTTPException(
-            status_code=500,
-            error="Bad Request",
-            message=f"Could not create your request. {e}",
-        )
+    manager = BaseStockImageManager.get_child(provider)
+    return await manager.search(**params)
 
 
 @router.post("/{provider}/download")
@@ -136,56 +97,41 @@ async def download_image(
     request: fastapi.Request,
     provider: Literal["freepik", "shutterstock"],
     code: StockImageRequest,
-    user: UserData = fastapi.Depends(jwt_access_security),
 ):
-    match provider:
-        case "freepik":
-            return await FreePikManager().download(code.id, user_id=user.uid)
-        case "shutterstock":
-            return await ShutterStockManager().download(code.id, user_id=user.uid)
-        case _:
-            raise exceptions.BaseHTTPException(
-                status_code=400,
-                error="Bad Request",
-                message=f"Unknown provider {provider}",
-            )
+    user: UserData = jwt_access_security(request)
+    manager = BaseStockImageManager.get_child(provider)
+    cost = await manager.get_cost(code.id)
+    if cost.get("error"):
+        raise fastapi.HTTPException(status_code=400, detail=cost.get("error"))
+    cost_coin = cost.get("ratio") * Settings.decodl_ratio_coin
+    await finance.check_quota(user.uid, cost_coin)
+    await finance.meter_cost(user.uid, cost_coin)
+
+    return await manager.download(code.id, user_id=user.uid)
 
 
 @router.get("/{provider}/download/{job_id}")
 async def get_job_status(
-    request: fastapi.Request,
-    provider: Literal["freepik", "shutterstock"],
-    job_id: str,
-    user: UserData = fastapi.Depends(jwt_access_security),
+    request: fastapi.Request, provider: Literal["freepik", "shutterstock"], job_id: str
 ):
-    try:
-        match provider:
-            case "freepik":
-                return await FreePikManager().get_job(job_id, user_id=user.uid)
-            case "shutterstock":
-                return await ShutterStockManager().get_job(job_id, user_id=user.uid)
-            case _:
-                raise exceptions.BaseHTTPException(
-                    status_code=400,
-                    error="Bad Request",
-                    message=f"Unknown provider {provider}",
-                )
+    user: UserData = jwt_access_security(request)
+    manager = BaseStockImageManager.get_child(provider)
+    return await manager.get_job(job_id, user_id=user.uid)
 
-    except Exception as e:
-        logging.error(f"job: {e}")
 
-        raise exceptions.BaseHTTPException(
-            status_code=500,
-            error="Bad Request",
-            message=f"Could not create your request. {e}",
-        )
+@router.get("/{provider}/cost")
+async def get_cost(
+    request: fastapi.Request, provider: Literal["freepik", "shutterstock"], code: int
+):
+    user: UserData = jwt_access_security(request)
+    manager = BaseStockImageManager.get_child(provider)
+    return await manager.get_cost(code)
 
 
 @router.post("/download")
-async def download(
-    url: str = fastapi.Body(embed=True),
-    user: UserData = fastapi.Depends(jwt_access_security),
-):
+async def download(request: fastapi.Request, url: str = fastapi.Body(embed=True)):
     from .services import download_job
+
+    user: UserData = jwt_access_security(request)
 
     return await download_job(url, user.uid)
